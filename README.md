@@ -1,17 +1,17 @@
 #Hand Keypoint detector
 
 Create a virtual environment python 3.10:
-'''bash
+'''
 py -3.10 -m venv venv
 .\venv\Scripts\activate
 '''
 or
-'''bash
+'''
 source venv/bin/activate
 '''
 
 Install the the dependencies. Here we use CUDA 11.7.
-'''bash
+'''
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu117
 pip install -e .[all]
 pip install -v -e third-party/ViTPose
