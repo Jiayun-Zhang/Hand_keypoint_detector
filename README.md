@@ -1,4 +1,4 @@
-#Hand Keypoint detector
+# Hand Keypoint detector
 
 Create a virtual environment python 3.10:
 '''
