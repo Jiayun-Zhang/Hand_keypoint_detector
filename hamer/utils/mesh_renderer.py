@@ -1,6 +1,6 @@
 import os
-if 'PYOPENGL_PLATFORM' not in os.environ:
-    os.environ['PYOPENGL_PLATFORM'] = 'egl'
+# if 'PYOPENGL_PLATFORM' not in os.environ:
+#     os.environ['PYOPENGL_PLATFORM'] = 'egl'
 import torch
 from torchvision.utils import make_grid
 import numpy as np
@@ -46,6 +46,8 @@ class MeshRenderer:
         self.cfg = cfg
         self.focal_length = cfg.EXTRA.FOCAL_LENGTH
         self.img_res = cfg.MODEL.IMAGE_SIZE
+        if 'PYOPENGL_PLATFORM' in os.environ:
+            del os.environ['PYOPENGL_PLATFORM']
         self.renderer = pyrender.OffscreenRenderer(viewport_width=self.img_res,
                                        viewport_height=self.img_res,
                                        point_size=1.0)

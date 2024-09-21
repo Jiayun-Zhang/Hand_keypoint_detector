@@ -22,9 +22,11 @@ def main():
     parser = argparse.ArgumentParser(description='HaMeR demo code')
     parser.add_argument('--checkpoint', type=str, default=DEFAULT_CHECKPOINT,
                         help='Path to pretrained model checkpoint')
-    parser.add_argument('--img_folder', type=str, default= 'C:/Users/Jiayun/Desktop/hamer-main/demos_new/take10/rgb', help='Folder with input images')
-    parser.add_argument('--out_folder', type=str, default='C:/Users/Jiayun/Desktop/hamer-main/demos_new/take1/rgb', help='Output folder to save rendered results')
+    parser.add_argument('--img_folder', type=str, default= 'C:/Users/Jiayun/Desktop/hamer-main/demos_new/take1/rgb', help='Folder with input images')
+    parser.add_argument('--out_file', type=str, default='keypoint_all_take1.json', help='Output json file name')
 
+    parser.add_argument('--out_folder', type=str, default='C:/Users/Jiayun/Desktop/hamer-main/demos_new/take1/rgb',
+                        help='Output folder to save rendered results')
     parser.add_argument('--side_view', dest='side_view', action='store_true', default=False,
                         help='If set, render side view also')
     parser.add_argument('--full_frame', dest='full_frame', action='store_true', default=True,
@@ -226,7 +228,7 @@ def main():
             inner_dict["left"] = left
             inner_dict["right"] = right
             outer_dict[filename] = inner_dict
-    with open('keypoint_all_take10.json', 'w') as json_file:
+    with open(args.out_file, 'w') as json_file:
         json.dump(outer_dict, json_file)
 
 
