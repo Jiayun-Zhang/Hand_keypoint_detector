@@ -40,6 +40,6 @@ bash fetch_demo_data.sh
 Run the code:
 
 ```
-python run.py --img_folder C:/Users/Jiayun/Desktop/hamer/demos_new/take1/rgb --out_file keypoint_all_take1.json --batch_size=48 --side_view --save_mesh --full_frame
+python run.py --img_folder C:/Users/Jiayun/Desktop/hamer/demos_new/take1/rgb --out_file keypoint_all_take1.json --batch_size=48 --full_frame
 
 ```
