@@ -9,9 +9,9 @@ import json
 rgb_folder = 'demos_new/take1/rgb'
 depth_folder = 'demos_new/take1/depth'
 # The number of frame
-index_to_view = 1
+index_to_view = 100
 # read the keypoints file
-with open("keypoint_all_take1.json", 'r') as json_file1:
+with open("corrected_keypoint_all_take1.json", 'r') as json_file1:
     data = json.load(json_file1)
 
 rgb_files = sorted([f for f in os.listdir(rgb_folder) if f.endswith('.png')])
@@ -59,6 +59,21 @@ def calculate_gripper_pose(P1, P2, P3):
     grasp_direction = grasp_direction / np.linalg.norm(grasp_direction)
     return P_center, width, grasp_direction
 
+
+def project_2d_to_3d(u, v, depth_image, intrinsics):
+    fx = intrinsics[0, 0]
+    fy = intrinsics[1, 1]
+    cx = intrinsics[0, 2]
+    cy = intrinsics[1, 2]
+
+    Z = depth_image[round(v), round(u)]
+    if Z == 0:
+        return np.array([0, 0, 0])
+    X = (u - cx) * Z / fx
+    Y = (v - cy) * Z / fy
+
+    return np.array([X, Y, Z]) * np.array([1, -1, -1])
+
 rgb_file = rgb_files[index_to_view]
 depth_file = depth_files[index_to_view]
 print(rgb_file)
@@ -66,21 +81,52 @@ print(rgb_file)
 rgb_path = os.path.join(rgb_folder, rgb_file)
 depth_path = os.path.join(depth_folder, depth_file)
 
-try:
-    keypoints_left = data[str(rgb_file)]["left"]["3d_keypoints"]
-    translation_left = np.array(data[str(rgb_file)]["left"]["translation"])
-    keypoints_left_np = np.array(keypoints_left) + translation_left
-    keypoints_left_np = keypoints_left_np * np.array([1, -1, -1])
+rgb_image = np.array(Image.open(rgb_path).convert('RGB'))
+depth_image = np.load(depth_path)
+depth_image = np.nan_to_num(depth_image, nan=0.0)
 
-    keypoints_right = data[str(rgb_file)]["right"]["3d_keypoints"]
-    translation_right = np.array(data[str(rgb_file)]["right"]["translation"])
-    keypoints_right_np = np.array(keypoints_right) + translation_right
-    keypoints_right_np = keypoints_right_np * np.array([1, -1, -1])
+K = np.array([
+                [525., 0, 319.5],
+                [0, 525., 239.5],
+                [0, 0, 1]])
+try:
+    # keypoints_left = data[str(rgb_file)]["left"]["3d_keypoints"]
+    # translation_left = np.array(data[str(rgb_file)]["left"]["translation"])
+    # keypoints_left_np = np.array(keypoints_left) + translation_left
+    # keypoints_left_np = keypoints_left_np * np.array([1, -1, -1])
+    #
+    # left_2d =  data[str(rgb_file)]["left"]["2d_keypoints"]
+    # real_left_3d_points = []
+    # for u, v in left_2d:
+    #     left_3d_point = project_2d_to_3d(u, v, depth_image, K)
+    #     real_left_3d_points.append(left_3d_point)
+    # real_left_3d_points = np.array(real_left_3d_points)
+    # bias = real_left_3d_points[2] - keypoints_left_np[2]
+    # keypoints_left_np += bias
+
+    keypoints_left_np = np.array(data[str(rgb_file)]["left"]["corrected_3d_keypoints"])
+
+    # keypoints_right = data[str(rgb_file)]["right"]["3d_keypoints"]
+    # translation_right = np.array(data[str(rgb_file)]["right"]["translation"])
+    # keypoints_right_np = np.array(keypoints_right) + translation_right
+    # keypoints_right_np = keypoints_right_np * np.array([1, -1, -1])
+    #
+    # right_2d = data[str(rgb_file)]["right"]["2d_keypoints"]
+    # real_right_3d_points = []
+    # for u, v in right_2d:
+    #     right_3d_point = project_2d_to_3d(u, v, depth_image, K)
+    #     real_right_3d_points.append(right_3d_point)
+    # real_right_3d_points = np.array(real_right_3d_points)
+    # bias = real_right_3d_points[2] - keypoints_right_np[2]
+    # keypoints_right_np += bias
+
+    keypoints_right_np = np.array(data[str(rgb_file)]["right"]["corrected_3d_keypoints"])
 
     p1_left = keypoints_left_np[4]
     p2_left = keypoints_left_np[8]
     p3_left = (keypoints_left_np[2] + keypoints_left_np[5]) / 2
     left_center, left_width, left_direction = calculate_gripper_pose(p1_left, p2_left, p3_left)
+
 
     p1_right = keypoints_right_np[4]
     p2_right = keypoints_right_np[8]
@@ -117,10 +163,7 @@ except KeyError:
     print("KeyError occurred, skipping this file.")
     exit()
 
-rgb_image = np.array(Image.open(rgb_path).convert('RGB'))
-depth_image = np.load(depth_path)
 
-depth_image = np.nan_to_num(depth_image, nan=0.0)
 
 rgbd_o3d = o3d.geometry.RGBDImage.create_from_color_and_depth(
     color=o3d.geometry.Image(rgb_image),
@@ -134,6 +177,10 @@ pc_o3d = o3d.geometry.PointCloud.create_from_rgbd_image(rgbd_o3d, cam_intr)
 pc_o3d.transform([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]])
 
 
+pc_o3d = o3d.geometry.PointCloud.create_from_rgbd_image(rgbd_o3d, cam_intr)
+pc_o3d.transform([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]])
+
+# 清理并添加几何体到可视化窗口
 vis.clear_geometries()
 vis.add_geometry(pc_o3d)
 vis.add_geometry(left_gripper_mesh)
@@ -141,8 +188,8 @@ vis.add_geometry(right_gripper_mesh)
 vis.add_geometry(lines_left)
 vis.add_geometry(lines_right)
 
-vis.poll_events()
-vis.update_renderer()
+render_option = vis.get_render_option()
+render_option.point_size = 10.0
 
 vis.run()
 vis.destroy_window()
