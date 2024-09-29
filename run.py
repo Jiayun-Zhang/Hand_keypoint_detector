@@ -9,10 +9,11 @@ from hamer.models import HAMER, download_models, load_hamer, DEFAULT_CHECKPOINT
 from hamer.utils import recursive_to
 from hamer.datasets.vitdet_dataset import ViTDetDataset, DEFAULT_MEAN, DEFAULT_STD
 from hamer.utils.renderer import Renderer, cam_crop_to_full
-
+from PIL import Image, ImageDraw
+import matplotlib.pyplot as plt
 
 LIGHT_BLUE = (0.65098039, 0.74117647, 0.85882353)
-from back_project import mirror_flip_3d_points, plot_points_on_image, apply_translation, project_points_3d_to_2d, calculate_gripper_pose
+from back_project import mirror_flip_3d_points, plot_points_on_image, apply_translation, project_points_3d_to_2d, calculate_gripper_pose, draw_keypoints
 from vitpose_model import ViTPoseModel
 
 import json
@@ -22,8 +23,8 @@ def main():
     parser = argparse.ArgumentParser(description='HaMeR demo code')
     parser.add_argument('--checkpoint', type=str, default=DEFAULT_CHECKPOINT,
                         help='Path to pretrained model checkpoint')
-    parser.add_argument('--img_folder', type=str, default= 'C:/Users/Jiayun/Desktop/hamer-main/demos_new/take1/rgb', help='Folder with input images')
-    parser.add_argument('--out_file', type=str, default='keypoint_all_take1.json', help='Output json file name')
+    parser.add_argument('--img_folder', type=str, default= 'C:/Users/Jiayun/Desktop/hamer/demos_new/take1/rgb', help='Folder with input images')
+    parser.add_argument('--out_file', type=str, default='keypoint_all_take.json', help='Output json file name')
 
     parser.add_argument('--out_folder', type=str, default='C:/Users/Jiayun/Desktop/hamer-main/demos_new/take1/rgb',
                         help='Output folder to save rendered results')
@@ -51,23 +52,25 @@ def main():
     model = model.to(device)
     model.eval()
 
-    # Load detector
-    from hamer.utils.utils_detectron2 import DefaultPredictor_Lazy
-    if args.body_detector == 'vitdet':
-        from detectron2.config import LazyConfig
-        import hamer
-        cfg_path = Path(hamer.__file__).parent / 'configs' / 'cascade_mask_rcnn_vitdet_h_75ep.py'
-        detectron2_cfg = LazyConfig.load(str(cfg_path))
-        detectron2_cfg.train.init_checkpoint = "https://dl.fbaipublicfiles.com/detectron2/ViTDet/COCO/cascade_mask_rcnn_vitdet_h/f328730692/model_final_f05665.pkl"
-        for i in range(3):
-            detectron2_cfg.model.roi_heads.box_predictors[i].test_score_thresh = 0.25
-        detector = DefaultPredictor_Lazy(detectron2_cfg)
-    elif args.body_detector == 'regnety':
-        from detectron2 import model_zoo
-        detectron2_cfg = model_zoo.get_config('new_baselines/mask_rcnn_regnety_4gf_dds_FPN_400ep_LSJ.py', trained=True)
-        detectron2_cfg.model.roi_heads.box_predictor.test_score_thresh = 0.5
-        detectron2_cfg.model.roi_heads.box_predictor.test_nms_thresh = 0.4
-        detector = DefaultPredictor_Lazy(detectron2_cfg)
+    #Remove detector to reduce running time
+
+    # # Load detector
+    # from hamer.utils.utils_detectron2 import DefaultPredictor_Lazy
+    # if args.body_detector == 'vitdet':
+    #     from detectron2.config import LazyConfig
+    #     import hamer
+    #     cfg_path = Path(hamer.__file__).parent / 'configs' / 'cascade_mask_rcnn_vitdet_h_75ep.py'
+    #     detectron2_cfg = LazyConfig.load(str(cfg_path))
+    #     detectron2_cfg.train.init_checkpoint = "https://dl.fbaipublicfiles.com/detectron2/ViTDet/COCO/cascade_mask_rcnn_vitdet_h/f328730692/model_final_f05665.pkl"
+    #     for i in range(3):
+    #         detectron2_cfg.model.roi_heads.box_predictors[i].test_score_thresh = 0.25
+    #     detector = DefaultPredictor_Lazy(detectron2_cfg)
+    # elif args.body_detector == 'regnety':
+    #     from detectron2 import model_zoo
+    #     detectron2_cfg = model_zoo.get_config('new_baselines/mask_rcnn_regnety_4gf_dds_FPN_400ep_LSJ.py', trained=True)
+    #     detectron2_cfg.model.roi_heads.box_predictor.test_score_thresh = 0.5
+    #     detectron2_cfg.model.roi_heads.box_predictor.test_nms_thresh = 0.4
+    #     detector = DefaultPredictor_Lazy(detectron2_cfg)
 
     # keypoint detector
     cpm = ViTPoseModel(device)
@@ -79,23 +82,42 @@ def main():
     # Iterate over all images in folder
     for img_path in img_paths:
         img_cv2 = cv2.imread(str(img_path))
-
-        # Detect humans in image
-        det_out = detector(img_cv2)
         img = img_cv2.copy()[:, :, ::-1]
 
-        det_instances = det_out['instances']
-        valid_idx = (det_instances.pred_classes == 0) & (det_instances.scores > 0.5)
-        pred_bboxes = det_instances.pred_boxes.tensor[valid_idx].cpu().numpy()
-        pred_scores = det_instances.scores[valid_idx].cpu().numpy()
+        # Detect humans in image
+        # removed because there is always only one human in video
+
+        # det_out = detector(img_cv2)
+        # det_instances = det_out['instances']
+        # valid_idx = (det_instances.pred_classes == 0) & (det_instances.scores > 0.5)
+        # pred_bboxes = det_instances.pred_boxes.tensor[valid_idx].cpu().numpy()
+        # pred_scores = det_instances.scores[valid_idx].cpu().numpy()
+
+        # Visualization of detectron2 output
+
+        # image = Image.open(img_path)
+        # draw = ImageDraw.Draw(image)
+        # for bbox in pred_bboxes:
+        #     # Convert floating-point numbers to integers for drawing
+        #     top_left = (int(bbox[0]), int(bbox[1]))
+        #     bottom_right = (int(bbox[2]), int(bbox[3]))
+        #     draw.rectangle([top_left, bottom_right], outline="red", width=3)
+        #
+        # plt.figure(figsize=(10, 10))
+        # plt.imshow(image)
+        # plt.axis('off')  # Turn off axis
+        # plt.show()
 
         # Detect human keypoints for each person
+
+        pred_bboxes = np.array([[0, 0, 640, 480]])
+        pred_scores = np.array([0.99])
+
         vitposes_out = cpm.predict_pose(
             img,
             [np.concatenate([pred_bboxes, pred_scores[:, None]], axis=1)],
         )
 
-        # 初始化用于存储最高置信度的左手和右手
         best_left_confidence = -np.inf
         best_right_confidence = -np.inf
         best_left_hand_bbox = None
@@ -106,15 +128,14 @@ def main():
             left_hand_keyp = vitposes['keypoints'][-42:-21]
             right_hand_keyp = vitposes['keypoints'][-21:]
 
-
             keyp = left_hand_keyp
             valid = keyp[:, 2] > 0.4
             if sum(valid) > 3:
                 total_confidence = np.sum(keyp[valid, 2])  # 计算左手关键点的置信度总和
                 if total_confidence > best_left_confidence:  # 更新最高置信度的左手
                     best_left_confidence = total_confidence
-                    best_left_hand_bbox = [keyp[valid, 0].min(), keyp[valid, 1].min(),
-                                           keyp[valid, 0].max(), keyp[valid, 1].max()]
+                    best_left_hand_bbox = [keyp[valid, 0].min()-10, keyp[valid, 1].min()-10,
+                                           keyp[valid, 0].max()+10, keyp[valid, 1].max()+10]
 
             keyp = right_hand_keyp
             valid = keyp[:, 2] > 0.4
@@ -122,10 +143,19 @@ def main():
                 total_confidence = np.sum(keyp[valid, 2])
                 if total_confidence > best_right_confidence:
                     best_right_confidence = total_confidence
-                    best_right_hand_bbox = [keyp[valid, 0].min(), keyp[valid, 1].min(),
-                                            keyp[valid, 0].max(), keyp[valid, 1].max()]
+                    best_right_hand_bbox = [keyp[valid, 0].min()-10, keyp[valid, 1].min()-10,
+                                            keyp[valid, 0].max()+10, keyp[valid, 1].max()+10]
 
-        # 保存最后检测到的最高置信度的左手和右手
+            # Visualization of Vitpose output
+            # img = Image.open(img_path)
+            # draw = ImageDraw.Draw(img)
+            # draw_keypoints(left_hand_keyp, draw, color="red")
+            # draw_keypoints(right_hand_keyp, draw, color="green")
+            # plt.figure(figsize=(10, 10))
+            # plt.imshow(img)
+            # plt.axis('off')
+            # plt.show()
+
         bboxes = []
         is_right = []
 
@@ -142,6 +172,20 @@ def main():
 
         boxes = np.stack(bboxes)
         right = np.stack(is_right)
+
+        # Visualization of hand bounding box
+
+        image = Image.open(img_path)
+        draw = ImageDraw.Draw(image)
+        for bbox in bboxes:
+            top_left = (int(bbox[0]), int(bbox[1]))
+            bottom_right = (int(bbox[2]), int(bbox[3]))
+            draw.rectangle([top_left, bottom_right], outline="red", width=3)
+
+        plt.figure(figsize=(10, 10))
+        plt.imshow(image)
+        plt.axis('off')  # Turn off axis
+        plt.show()
 
         # Run reconstruction on all detected hands
         dataset = ViTDetDataset(model_cfg, img_cv2, boxes, right, rescale_factor=args.rescale_factor)
@@ -189,17 +233,6 @@ def main():
                     right["2d_keypoints"] = right_hand_points_2d.tolist()
                     right["focal_length"] = scaled_focal_length
 
-                    # thumb_tip = np.array(right["3d_keypoints"][4])
-                    # index_tip = np.array(right["3d_keypoints"][8])
-                    # index_mcp = np.array(right["3d_keypoints"][5])
-                    # thumb_mcp = np.array(right["3d_keypoints"][1])
-                    # gripper_base = index_mcp + thumb_mcp / 2
-                    # width, grasp_direction = calculate_gripper_pose(thumb_tip, index_tip, gripper_base)
-                    # right["thumb_tip"] = thumb_tip.tolist()
-                    # right["index_tip"] = index_tip.tolist()
-                    # right["gripper_base"] = gripper_base.tolist()
-                    # right["gripper_open_width"] = width
-                    # right["grasp_direction"] = grasp_direction.tolist()
 
                 if batch['right'][i] == 0:
                     left_hand_keyp = mirror_flip_3d_points(out['pred_keypoints_3d'].cpu().numpy()[i])
@@ -211,17 +244,6 @@ def main():
                     left["2d_keypoints"] = left_hand_points_2d.tolist()
                     left["focal_length"] = scaled_focal_length
 
-                    # thumb_tip = np.array(left["3d_keypoints"][4])
-                    # index_tip = np.array(left["3d_keypoints"][8])
-                    # index_mcp = np.array(left["3d_keypoints"][5])
-                    # thumb_mcp = np.array(left["3d_keypoints"][1])
-                    # gripper_base = index_mcp + thumb_mcp / 2
-                    # width, grasp_direction = calculate_gripper_pose(thumb_tip, index_tip, gripper_base)
-                    # left["thumb_tip"] = thumb_tip.tolist()
-                    # left["index_tip"] = index_tip.tolist()
-                    # left["gripper_base"] = gripper_base.tolist()
-                    # left["gripper_open_width"] = width
-                    # left["grasp_direction"] = grasp_direction.tolist()
 
             filename = str(img_path.name)
             inner_dict = {}
