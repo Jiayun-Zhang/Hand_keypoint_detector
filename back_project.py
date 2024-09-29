@@ -2,9 +2,14 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 
+def draw_keypoints(keypoints, draw, color="blue"):
+    for keypoint in keypoints:
+        x, y, conf = keypoint
+        if conf > 0.5:  # Only draw if confidence is greater than 0.5
+            draw.ellipse((x-3, y-3, x+3, y+3), fill=color)
+
 def apply_translation(points, translation):
     return points + translation
-
 
 def project_points_3d_to_2d(points_3d, K):
     #points_3d_homogeneous = np.hstack((points_3d, np.ones((points_3d.shape[0], 1))))
@@ -23,24 +28,46 @@ def plot_points_on_image(image_path, points_2d):
     plt.show()
 
 def mirror_flip_3d_points(points):
-    """
-    mirror flip y axis
-    """
     left_hand_points = points.copy()
     left_hand_points[:, 0] = -left_hand_points[:, 0]
     return left_hand_points
 
 def calculate_gripper_pose(P1, P2, P3):
-    # 计算夹爪中心点
     P_center = (P1 + P2) / 2
 
-    # 计算夹爪开口宽度
     width = np.linalg.norm(P1 - P2)
 
-    # 计算抓取方向向量（虎口到夹爪中心）
     grasp_direction = P_center - P3
     grasp_direction = grasp_direction / np.linalg.norm(grasp_direction)
     return width, grasp_direction
+
+def compute_3d_point_from_2d(u, v, K, depth):
+    # Extract intrinsic parameters
+    fx, fy = K[0, 0], K[1, 1]  # Focal lengths
+    cx, cy = K[0, 2], K[1, 2]  # Principal point
+
+    # 2D image coordinates
+
+    # Compute the 3D coordinates (X, Y, Z)
+    X = (u - cx) * depth / fx
+    Y = (v - cy) * depth / fy
+    Z = depth
+
+    return np.array([X, Y, Z])
+
+def project_2d_to_3d(u, v, depth_image, intrinsics):
+    fx = intrinsics[0, 0]
+    fy = intrinsics[1, 1]
+    cx = intrinsics[0, 2]
+    cy = intrinsics[1, 2]
+
+    Z = depth_image[round(v), round(u)]
+    if Z == 0:
+        return np.array([0, 0, 0])
+    X = (u - cx) * Z / fx
+    Y = (v - cy) * Z / fy
+
+    return np.array([X, Y, Z])
 
 if __name__ == '__main__':
     K = np.array([
