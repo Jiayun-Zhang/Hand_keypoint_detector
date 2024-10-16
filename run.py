@@ -23,10 +23,10 @@ def main():
     parser = argparse.ArgumentParser(description='HaMeR demo code')
     parser.add_argument('--checkpoint', type=str, default=DEFAULT_CHECKPOINT,
                         help='Path to pretrained model checkpoint')
-    parser.add_argument('--img_folder', type=str, default= 'C:/Users/Jiayun/Desktop/hamer/demos_new/take1/rgb', help='Folder with input images')
-    parser.add_argument('--out_file', type=str, default='keypoint_all_take.json', help='Output json file name')
+    parser.add_argument('--img_folder', type=str, default= 'C:/Users/Jiayun/Desktop/hamer/demos_new/take2/rgb', help='Folder with input images')
+    parser.add_argument('--out_file', type=str, default='keypoint_all_take2.json', help='Output json file name')
 
-    parser.add_argument('--out_folder', type=str, default='C:/Users/Jiayun/Desktop/hamer-main/demos_new/take1/rgb',
+    parser.add_argument('--out_folder', type=str, default='C:/Users/Jiayun/Desktop/hamer-main/demos_new/take2/rgb',
                         help='Output folder to save rendered results')
     parser.add_argument('--side_view', dest='side_view', action='store_true', default=False,
                         help='If set, render side view also')
@@ -54,7 +54,7 @@ def main():
 
     #Remove detector to reduce running time
 
-    # # Load detector
+    # Load detector
     # from hamer.utils.utils_detectron2 import DefaultPredictor_Lazy
     # if args.body_detector == 'vitdet':
     #     from detectron2.config import LazyConfig
@@ -175,17 +175,17 @@ def main():
 
         # Visualization of hand bounding box
 
-        image = Image.open(img_path)
-        draw = ImageDraw.Draw(image)
-        for bbox in bboxes:
-            top_left = (int(bbox[0]), int(bbox[1]))
-            bottom_right = (int(bbox[2]), int(bbox[3]))
-            draw.rectangle([top_left, bottom_right], outline="red", width=3)
-
-        plt.figure(figsize=(10, 10))
-        plt.imshow(image)
-        plt.axis('off')  # Turn off axis
-        plt.show()
+        # image = Image.open(img_path)
+        # draw = ImageDraw.Draw(image)
+        # for bbox in bboxes:
+        #     top_left = (int(bbox[0]), int(bbox[1]))
+        #     bottom_right = (int(bbox[2]), int(bbox[3]))
+        #     draw.rectangle([top_left, bottom_right], outline="red", width=3)
+        #
+        # plt.figure(figsize=(10, 10))
+        # plt.imshow(image)
+        # plt.axis('off')  # Turn off axis
+        # plt.show()
 
         # Run reconstruction on all detected hands
         dataset = ViTDetDataset(model_cfg, img_cv2, boxes, right, rescale_factor=args.rescale_factor)

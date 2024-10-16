@@ -6,9 +6,9 @@ import json
 import cv2
 from back_project import project_2d_to_3d
 
-rgb_folder = 'demos_new/take1/rgb'
-depth_folder = 'demos_new/take1/depth'
-json_file = "keypoint_all_take1.json"
+rgb_folder = 'demos_new/take2/rgb'
+depth_folder = 'demos_new/take2/depth'
+json_file = "keypoint_all_take2.json"
 with open(json_file, 'r') as json_file1:
     data = json.load(json_file1)
 

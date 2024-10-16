@@ -4,60 +4,51 @@ import numpy as np
 from PIL import Image
 import os
 import json
-
-# Demo floder
-rgb_folder = 'demos_new/take1/rgb'
-depth_folder = 'demos_new/take1/depth'
-# The number of frame
-index_to_view = 100
-# read the keypoints file
-with open("corrected_keypoint_all_take1.json", 'r') as json_file1:
-    data = json.load(json_file1)
-
-rgb_files = sorted([f for f in os.listdir(rgb_folder) if f.endswith('.png')])
-depth_files = sorted([f for f in os.listdir(depth_folder) if f.endswith('.npy')])
-
-vis = o3d.visualization.Visualizer()
-vis.create_window()
-
-cam_intr = o3d.camera.PinholeCameraIntrinsic(
-    width=640, height=480, fx=525., fy=525., cx=319.5, cy=239.5)
-
-gripper_mesh = o3d.io.read_triangle_mesh("robotiq_arg2f_140.obj")
+import time
+def apply_transformation_to_gripper(mesh, transformation):
+    mesh_transformed = copy.deepcopy(mesh)
+    tip_center = np.array([0, 0 ,0.2094631])
+    translation_to_origin = np.eye(4)
+    translation_to_origin[:3, 3] = -tip_center
+    translation_to_origin[:3, :3] = np.array([[0, -1, 0],
+                                 [1, 0, 0],
+                                 [0, 0, 1]])
+    mesh_transformed.transform(translation_to_origin)
 
 
-def apply_transformation_to_gripper(mesh, base_position, grasp_direction):
-    translation_matrix = np.eye(4)
-    translation_matrix[:3, 3] = base_position
-
-    default_direction = np.array([0, 0, 1])
-    axis = np.cross(default_direction, grasp_direction)
-    angle = np.arccos(np.dot(default_direction, grasp_direction) /
-                      (np.linalg.norm(default_direction) * np.linalg.norm(grasp_direction)))
-
-    axis = axis / np.linalg.norm(axis)
-    K = np.array([
-        [0, -axis[2], axis[1]],
-        [axis[2], 0, -axis[0]],
-        [-axis[1], axis[0], 0]
-    ])
-    rotation_matrix = np.eye(3) + np.sin(angle) * K + (1 - np.cos(angle)) * np.dot(K, K)
-
-    transform_matrix = np.eye(4)
-    transform_matrix[:3, :3] = rotation_matrix
-    transformation = np.dot(translation_matrix, transform_matrix)
-
-    mesh_transformed = mesh.transform(transformation)
-
+    mesh_transformed.transform(transformation)
     return mesh_transformed
 
 
 def calculate_gripper_pose(P1, P2, P3):
     P_center = (P1 + P2) / 2
     width = np.linalg.norm(P1 - P2)
+
+    # calculate rotation
     grasp_direction = P_center - P3
     grasp_direction = grasp_direction / np.linalg.norm(grasp_direction)
-    return P_center, width, grasp_direction
+    Z_axis = grasp_direction
+
+    X_axis = P2 - P1
+    X_axis = X_axis / np.linalg.norm(X_axis)
+
+    Y_axis = np.cross(Z_axis, X_axis)
+    Y_axis = Y_axis / np.linalg.norm(Y_axis)
+
+    X_axis = np.cross(Y_axis, Z_axis)
+    X_axis = X_axis / np.linalg.norm(X_axis)
+
+    rotation_matrix = np.eye(4)
+    rotation_matrix[:3, 0] = X_axis
+    rotation_matrix[:3, 1] = Y_axis
+    rotation_matrix[:3, 2] = Z_axis
+
+    transformation_matrix = np.eye(4)
+    transformation_matrix[:3, 3] = P_center
+
+    transform = np.dot(transformation_matrix, rotation_matrix)
+
+    return transform
 
 
 def project_2d_to_3d(u, v, depth_image, intrinsics):
@@ -73,6 +64,25 @@ def project_2d_to_3d(u, v, depth_image, intrinsics):
     Y = (v - cy) * Z / fy
 
     return np.array([X, Y, Z]) * np.array([1, -1, -1])
+
+# Demo floder
+rgb_folder = 'demos_new/take1/rgb'
+depth_folder = 'demos_new/take1/depth'
+# The number of frame
+index_to_view = 250
+# read the keypoints file
+with open("corrected_keypoint_all_take1.json", 'r') as json_file1:
+    data = json.load(json_file1)
+
+rgb_files = sorted([f for f in os.listdir(rgb_folder) if f.endswith('.png')])
+depth_files = sorted([f for f in os.listdir(depth_folder) if f.endswith('.npy')])
+
+vis = o3d.visualization.Visualizer()
+vis.create_window()
+
+cam_intr = o3d.camera.PinholeCameraIntrinsic(
+    width=640, height=480, fx=525., fy=525., cx=319.5, cy=239.5)
+gripper_mesh = o3d.io.read_triangle_mesh("robotiq_arg2f_140.obj")
 
 rgb_file = rgb_files[index_to_view]
 depth_file = depth_files[index_to_view]
@@ -90,53 +100,20 @@ K = np.array([
                 [0, 525., 239.5],
                 [0, 0, 1]])
 try:
-    # keypoints_left = data[str(rgb_file)]["left"]["3d_keypoints"]
-    # translation_left = np.array(data[str(rgb_file)]["left"]["translation"])
-    # keypoints_left_np = np.array(keypoints_left) + translation_left
-    # keypoints_left_np = keypoints_left_np * np.array([1, -1, -1])
-    #
-    # left_2d =  data[str(rgb_file)]["left"]["2d_keypoints"]
-    # real_left_3d_points = []
-    # for u, v in left_2d:
-    #     left_3d_point = project_2d_to_3d(u, v, depth_image, K)
-    #     real_left_3d_points.append(left_3d_point)
-    # real_left_3d_points = np.array(real_left_3d_points)
-    # bias = real_left_3d_points[2] - keypoints_left_np[2]
-    # keypoints_left_np += bias
-
     keypoints_left_np = np.array(data[str(rgb_file)]["left"]["corrected_3d_keypoints"])
-
-    # keypoints_right = data[str(rgb_file)]["right"]["3d_keypoints"]
-    # translation_right = np.array(data[str(rgb_file)]["right"]["translation"])
-    # keypoints_right_np = np.array(keypoints_right) + translation_right
-    # keypoints_right_np = keypoints_right_np * np.array([1, -1, -1])
-    #
-    # right_2d = data[str(rgb_file)]["right"]["2d_keypoints"]
-    # real_right_3d_points = []
-    # for u, v in right_2d:
-    #     right_3d_point = project_2d_to_3d(u, v, depth_image, K)
-    #     real_right_3d_points.append(right_3d_point)
-    # real_right_3d_points = np.array(real_right_3d_points)
-    # bias = real_right_3d_points[2] - keypoints_right_np[2]
-    # keypoints_right_np += bias
-
     keypoints_right_np = np.array(data[str(rgb_file)]["right"]["corrected_3d_keypoints"])
 
     p1_left = keypoints_left_np[4]
     p2_left = keypoints_left_np[8]
     p3_left = (keypoints_left_np[2] + keypoints_left_np[5]) / 2
-    left_center, left_width, left_direction = calculate_gripper_pose(p1_left, p2_left, p3_left)
-
-
+    transformation_l = calculate_gripper_pose(p1_left, p2_left, p3_left)
     p1_right = keypoints_right_np[4]
     p2_right = keypoints_right_np[8]
     p3_right = (keypoints_right_np[2] + keypoints_right_np[5]) / 2
-    right_center, right_width, right_direction = calculate_gripper_pose(p1_right, p2_right, p3_right)
+    transformation_r = calculate_gripper_pose(p1_right, p2_right, p3_right)
 
-    left_gripper_mesh = apply_transformation_to_gripper(copy.deepcopy(gripper_mesh), keypoints_left_np[0],
-                                                        left_direction)
-    right_gripper_mesh = apply_transformation_to_gripper(copy.deepcopy(gripper_mesh), keypoints_right_np[0],
-                                                         right_direction)
+    left_gripper_mesh = apply_transformation_to_gripper(copy.deepcopy(gripper_mesh), transformation_l)
+    right_gripper_mesh = apply_transformation_to_gripper(copy.deepcopy(gripper_mesh), transformation_r)
 
     connections = [
         (0, 1), (1, 2), (2, 3), (3, 4),
@@ -179,15 +156,15 @@ pc_o3d.transform([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]])
 
 pc_o3d = o3d.geometry.PointCloud.create_from_rgbd_image(rgbd_o3d, cam_intr)
 pc_o3d.transform([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]])
+coordinate_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.2, origin=[0, 0, 0])
 
-# 清理并添加几何体到可视化窗口
 vis.clear_geometries()
 vis.add_geometry(pc_o3d)
 vis.add_geometry(left_gripper_mesh)
 vis.add_geometry(right_gripper_mesh)
 vis.add_geometry(lines_left)
 vis.add_geometry(lines_right)
-
+vis.add_geometry(coordinate_frame)
 render_option = vis.get_render_option()
 render_option.point_size = 10.0
 
