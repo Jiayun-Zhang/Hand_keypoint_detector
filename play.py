@@ -6,6 +6,10 @@ import open3d as o3d
 import numpy as np
 from PIL import Image
 
+rgb_folder = 'C:/Users/Jiayun/Desktop/pouring/take8/rgb'
+depth_folder = 'C:/Users/Jiayun/Desktop/pouring/take8/depth'
+json_file = "corrected_aligned_keypoint_take8.json"
+
 def apply_transformation_to_gripper(mesh, transformation):
     mesh_transformed = copy.deepcopy(mesh)
     tip_center = np.array([0, 0 ,0.2094631])
@@ -64,9 +68,6 @@ def project_2d_to_3d(u, v, depth_image, intrinsics):
 
     return np.array([X, Y, Z]) * np.array([1, -1, -1])
 
-rgb_folder = 'C:/Users/Jiayun/Desktop/pouring/take8/rgb'
-depth_folder = 'C:/Users/Jiayun/Desktop/pouring/take8/depth'
-json_file = "corrected_aligned_keypoint_take8.json"
 
 with open(json_file, 'r') as json_file1:
     data = json.load(json_file1)

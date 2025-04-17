@@ -45,9 +45,16 @@ python run.py --img_folder C:/Users/Jiayun/Desktop/hamer/demos_new/take1/rgb --o
 ```
 Correct the position of key points using the depth map
 ```
-python .\correct_kp_bias.py 
+python correct_kp_bias.py 
+# modify rgb_folder, depth_folder and json_file
 ```
 Convert hand key points into gripper poses and generate visualization videos
 ```
 python play.py 
+# modify rgb_folder, depth_folder and json_file
+```
+
+Manually modify the opening or closing of the gripper
+```
+python gripper.py 
 ```
