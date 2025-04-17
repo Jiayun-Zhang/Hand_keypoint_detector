@@ -23,10 +23,10 @@ def main():
     parser = argparse.ArgumentParser(description='HaMeR demo code')
     parser.add_argument('--checkpoint', type=str, default=DEFAULT_CHECKPOINT,
                         help='Path to pretrained model checkpoint')
-    parser.add_argument('--img_folder', type=str, default= 'C:/Users/Jiayun/Desktop/hamer/demos_new/take2/rgb', help='Folder with input images')
+    parser.add_argument('--img_folder', type=str, default= 'C:/Users/Jiayun/Desktop/hamer/demos_new/take1/rgb', help='Folder with input images')
     parser.add_argument('--out_file', type=str, default='keypoint_all_take2.json', help='Output json file name')
 
-    parser.add_argument('--out_folder', type=str, default='C:/Users/Jiayun/Desktop/hamer-main/demos_new/take2/rgb',
+    parser.add_argument('--out_folder', type=str, default='C:/Users/Jiayun/Desktop/hamer-main/demos_new/take1/rgb',
                         help='Output folder to save rendered results')
     parser.add_argument('--side_view', dest='side_view', action='store_true', default=False,
                         help='If set, render side view also')
@@ -208,15 +208,15 @@ def main():
             # print(model_cfg.MODEL.IMAGE_SIZE)
             # print(img_size.max())
             # scaled_focal_length = 525.5
-            scaled_focal_length = torch.tensor(525., device='cuda:0')
+            scaled_focal_length = torch.tensor(570.3422241210938, device='cuda:0')
             pred_cam_t_full = cam_crop_to_full(pred_cam, box_center, box_size, img_size,
                                                scaled_focal_length).detach().cpu().numpy()
 
             scaled_focal_length = scaled_focal_length.cpu().item()
             print(scaled_focal_length)
             K = np.array([
-                [scaled_focal_length, 0, 320],
-                [0, scaled_focal_length, 240],
+                [scaled_focal_length, 0, 319.5],
+                [0, scaled_focal_length, 239.5],
                 [0, 0, 1]])
 
             left = {}

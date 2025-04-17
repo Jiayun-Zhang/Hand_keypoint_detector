@@ -5,10 +5,12 @@ import os
 import json
 import cv2
 from back_project import project_2d_to_3d
+import re
 
-rgb_folder = 'demos_new/take2/rgb'
-depth_folder = 'demos_new/take2/depth'
-json_file = "keypoint_all_take2.json"
+rgb_folder = 'C:/Users/Jiayun/Desktop/pouring/take8/rgb'
+depth_folder = 'C:/Users/Jiayun/Desktop/pouring/take8/depth'
+json_file = "aligned_keypoint_take8.json"
+
 with open(json_file, 'r') as json_file1:
     data = json.load(json_file1)
 
@@ -21,9 +23,9 @@ vis.create_window()
 
 
 cam_intr = o3d.camera.PinholeCameraIntrinsic(
-    width=640, height=480, fx=525., fy=525., cx=319.5, cy=239.5)
-K = np.array([[525., 0, 319.5],
-                [0, 525., 239.5],
+    width=640, height=480, fx=570.3422241210938, fy=570.3422241210938, cx=319.5, cy=239.5)
+K = np.array([[570.3422241210938, 0, 319.5],
+                [0, 570.3422241210938, 239.5],
                 [0, 0, 1]])
 
 video_filename = 'output_video.mp4'
@@ -58,14 +60,16 @@ for rgb_file, depth_file in zip(rgb_files, depth_files):
         # use the depth img to correct the 3d keypoint
         left_2d = data[str(rgb_file)]["left"]["2d_keypoints"]
         real_left_3d_points = []
+
         for u, v in left_2d:
             left_3d_point = project_2d_to_3d(u, v, depth_image, K)
             real_left_3d_points.append(left_3d_point)
         real_left_3d_points = np.array(real_left_3d_points)
         bias_1 = real_left_3d_points[1] - keypoints_left_np[1]
-        bias_2 = real_left_3d_points[5] - keypoints_left_np[5]
+        bias_2 = real_left_3d_points[3] - keypoints_left_np[3]
 
-        keypoints_left_np += np.minimum(bias_1, bias_2)
+        # keypoints_left_np += np.minimum(bias_1, bias_2)
+        keypoints_left_np += bias_2
         keypoints_left_np *= np.array([1, -1, -1])
 
         # Check if the corrected keypoint is an outlier, if is, keep using the last one
@@ -76,6 +80,15 @@ for rgb_file, depth_file in zip(rgb_files, depth_files):
         last_left = keypoints_left_np
 
         data[str(rgb_file)]["left"]["corrected_3d_keypoints"] = keypoints_left_np.tolist()
+
+        distances_left = np.linalg.norm(keypoints_left_np[4] - keypoints_left_np[8])
+        print(distances_left)
+        if distances_left > 0.08:
+            data[str(rgb_file)]["left"]["gripper"] = 1
+            print("open")
+        else:
+            data[str(rgb_file)]["left"]["gripper"] = 0
+            print("close")
 
         keypoints_right = data[str(rgb_file)]["right"]["3d_keypoints"]
         translation_right = np.array(data[str(rgb_file)]["right"]["translation"])
@@ -88,10 +101,11 @@ for rgb_file, depth_file in zip(rgb_files, depth_files):
             right_3d_point = project_2d_to_3d(u, v, depth_image, K)
             real_right_3d_points.append(right_3d_point)
         real_right_3d_points = np.array(real_right_3d_points)
-        bias_1 = real_right_3d_points[1] - keypoints_right_np[1]
+        # bias_1 = real_right_3d_points[1] - keypoints_right_np[1]
         bias_2 = real_right_3d_points[2] - keypoints_right_np[2]
 
-        keypoints_right_np += np.minimum(bias_1, bias_2)
+        # keypoints_right_np += np.minimum(bias_1, bias_2)
+        keypoints_right_np += bias_2
         keypoints_right_np *= np.array([1, -1, -1])
 
         # Check if the corrected keypoint is an outlier, if is, keep using the last one
@@ -102,6 +116,17 @@ for rgb_file, depth_file in zip(rgb_files, depth_files):
         last_right = keypoints_right_np
 
         data[str(rgb_file)]["right"]["corrected_3d_keypoints"] = keypoints_right_np.tolist()
+
+
+        distances_right = np.linalg.norm(keypoints_right_np[4] - keypoints_right_np[8])
+        # print(distances_right)
+
+        if distances_right > 0.09:
+            data[str(rgb_file)]["right"]["gripper"] = 1
+            print("open")
+        else:
+            data[str(rgb_file)]["right"]["gripper"] = 0
+            print("close")
 
         connections = [
             (0, 1), (1, 2), (2, 3), (3, 4),
@@ -159,6 +184,35 @@ for rgb_file, depth_file in zip(rgb_files, depth_files):
 video_writer.release()
 
 vis.destroy_window()
+
+
+
+image_files = [f for f in os.listdir(rgb_folder) if f.startswith("rgb_frame") and f.endswith(".png")]
+image_files_sorted = sorted(image_files, key=lambda x: int(re.search(r"rgb_frame(\d+)\.png", x).group(1)))
+
+# 3. 遍历所有图片，检查 JSON 是否缺失 key
+last_valid_data = None  # 存储前一张有效帧的数据
+
+for frame in image_files_sorted:
+    if frame in data:  # 如果 JSON 中有这个 key
+        if "corrected_3d_keypoints" not in data[frame]["left"]:
+            data[frame]["left"] = last_valid_data["left"]
+            # print(frame)
+        if "corrected_3d_keypoints" not in data[frame]["right"]:
+            data[frame]["right"] = last_valid_data["right"]
+            print(frame)
+        last_valid_data = data[frame]  # 更新 last_valid_data
+    else:  # 如果 JSON 缺失这个 key
+        if last_valid_data is not None:  # 如果前一张有效帧存在
+            data[frame] = last_valid_data.copy()  # 复制前一张的数据
+            print(f"Added missing frame {frame} using previous data.")
+            # (data[frame])
+        else:
+            print(f"Warning: {frame} is missing and no previous data available!")
+
+# 4. 保存修改后的 JSON
+output_file = json_file
+
 
 with open("corrected_" + json_file, 'w') as json_file:
     json.dump(data, json_file)

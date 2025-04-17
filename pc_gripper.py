@@ -65,13 +65,10 @@ def project_2d_to_3d(u, v, depth_image, intrinsics):
 
     return np.array([X, Y, Z]) * np.array([1, -1, -1])
 
-# Demo floder
-rgb_folder = 'demos_new/take1/rgb'
-depth_folder = 'demos_new/take1/depth'
-# The number of frame
+rgb_folder = 'C:/Users/Jiayun/Desktop/pouring/take8/rgb'
+depth_folder = 'C:/Users/Jiayun/Desktop/pouring/take8/depth_predicted'
 index_to_view = 250
-# read the keypoints file
-with open("corrected_keypoint_all_take1.json", 'r') as json_file1:
+with open("corrected_keypoint_all_take8.json", 'r') as json_file1:
     data = json.load(json_file1)
 
 rgb_files = sorted([f for f in os.listdir(rgb_folder) if f.endswith('.png')])

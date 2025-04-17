@@ -15,8 +15,6 @@ def apply_transformation_to_gripper(mesh, transformation):
                                  [1, 0, 0],
                                  [0, 0, 1]])
     mesh_transformed.transform(translation_to_origin)
-
-
     mesh_transformed.transform(transformation)
     return mesh_transformed
 
@@ -66,10 +64,11 @@ def project_2d_to_3d(u, v, depth_image, intrinsics):
 
     return np.array([X, Y, Z]) * np.array([1, -1, -1])
 
-rgb_folder = 'demos_new/take1/rgb'
-depth_folder = 'demos_new/take1/depth'
+rgb_folder = 'C:/Users/Jiayun/Desktop/pouring/take8/rgb'
+depth_folder = 'C:/Users/Jiayun/Desktop/pouring/take8/depth'
+json_file = "corrected_aligned_keypoint_take8.json"
 
-with open("corrected_keypoint_all_take1.json", 'r') as json_file1:
+with open(json_file, 'r') as json_file1:
     data = json.load(json_file1)
 
 rgb_files = sorted([f for f in os.listdir(rgb_folder) if f.endswith('.png')])
@@ -79,7 +78,7 @@ vis = o3d.visualization.Visualizer()
 vis.create_window()
 
 cam_intr = o3d.camera.PinholeCameraIntrinsic(
-    width=640, height=480, fx=525., fy=525., cx=319.5, cy=239.5)
+    width=640, height=480, fx=570.3422241210938, fy=570.3422241210938, cx=319.5, cy=239.5)
 
 gripper_mesh = o3d.io.read_triangle_mesh("robotiq_arg2f_140.obj")
 gripper_mesh.paint_uniform_color([1, 0, 0])
@@ -112,7 +111,8 @@ for index_to_view in range(len(rgb_files)):
     pc_o3d = o3d.geometry.PointCloud.create_from_rgbd_image(rgbd_o3d, cam_intr)
     pc_o3d.transform([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]])
 
-    try:
+    # try:
+    if True:
         keypoints_left_np = np.array(data[str(rgb_file)]["left"]["corrected_3d_keypoints"])
         keypoints_right_np = np.array(data[str(rgb_file)]["right"]["corrected_3d_keypoints"])
 
@@ -121,13 +121,14 @@ for index_to_view in range(len(rgb_files)):
         p3_left = (keypoints_left_np[2] + keypoints_left_np[5]) / 2
         transformation_l = calculate_gripper_pose(p1_left, p2_left, p3_left)
         left_gripper_mesh = apply_transformation_to_gripper(copy.deepcopy(gripper_mesh), transformation_l)
-
+        data[str(rgb_file)]["left"]["gripper_pose"] = transformation_l.tolist()
 
         p1_right = keypoints_right_np[4]
         p2_right = keypoints_right_np[8]
         p3_right = (keypoints_right_np[2] + keypoints_right_np[5]) / 2
         transformation_r = calculate_gripper_pose(p1_right, p2_right, p3_right)
         right_gripper_mesh = apply_transformation_to_gripper(copy.deepcopy(gripper_mesh), transformation_r)
+        data[str(rgb_file)]["right"]["gripper_pose"] = transformation_r.tolist()
 
         connections = [
             (0, 1), (1, 2), (2, 3), (3, 4),
@@ -168,9 +169,12 @@ for index_to_view in range(len(rgb_files)):
         image_path = os.path.join("hand2gripper_output", f"frame_{index_to_view:04d}.png")
         vis.capture_screen_image(image_path)
 
-    except KeyError:
-        print(f"KeyError occurred for frame {index_to_view}, skipping this file.")
-        continue
+    # except KeyError:
+    #     print(f"KeyError occurred for frame {index_to_view}, skipping this file.")
+    #     continue
+
+with open(json_file, 'w') as json_file:
+    json.dump(data, json_file)
 
 vis.destroy_window()
 

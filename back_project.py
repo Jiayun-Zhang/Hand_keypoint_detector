@@ -61,7 +61,7 @@ def project_2d_to_3d(u, v, depth_image, intrinsics):
     cx = intrinsics[0, 2]
     cy = intrinsics[1, 2]
 
-    Z = depth_image[round(v), round(u)]
+    Z = depth_image[min(479, round(v)), min(639, round(u))]
     if Z == 0:
         return np.array([0, 0, 0])
     X = (u - cx) * Z / fx
