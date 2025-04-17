@@ -43,3 +43,11 @@ Run the code:
 python run.py --img_folder C:/Users/Jiayun/Desktop/hamer/demos_new/take1/rgb --out_file keypoint_all_take1.json --batch_size=48 --full_frame
 
 ```
+Correct the position of key points using the depth map
+```
+python .\correct_kp_bias.py 
+```
+Convert hand key points into gripper poses and generate visualization videos
+```
+python play.py 
+```
