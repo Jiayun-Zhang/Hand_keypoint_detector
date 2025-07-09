@@ -25,12 +25,17 @@ parser = argparse.ArgumentParser(description='3D keypoint correction and visuali
 parser.add_argument('--rgb_folder', type=str, required=True, help='Path to RGB image folder')
 parser.add_argument('--depth_folder', type=str, required=True, help='Path to depth .npy files folder')
 parser.add_argument('--json_file', type=str, required=True, help='Path to the keypoint JSON file')
+parser.add_argument('--right_distance_threshold', type=str, default=5, help='Used to determine how far away from the previous hand key point is considered an outlier')
+parser.add_argument('--left_distance_threshold', type=str, default=5, help='Used to determine how far away from the previous hand key point is considered an outlier')
+
+
 args = parser.parse_args()
 
 rgb_folder = args.rgb_folder
 depth_folder = args.depth_folder
 json_file = args.json_file
-
+right_distance_threshold = args.right_distance_threshold
+left_distance_threshold = args.left_distance_threshold
 
 with open(json_file, 'r') as json_file1:
     data = json.load(json_file1)
@@ -50,10 +55,10 @@ K = np.array([[570.3422241210938, 0, 319.5],
                 [0, 570.3422241210938, 239.5],
                 [0, 0, 1]])
 
-video_filename = 'output_video.mp4'
+video_writer = None
+video_filename = 'hand_keypoints.mp4'
 fps = 30
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-video_writer = cv2.VideoWriter(video_filename, fourcc, fps, (1920, 1080))
 
 count = 0
 last_left = []
@@ -97,7 +102,7 @@ for rgb_file, depth_file in zip(rgb_files, depth_files):
         # Check if the corrected keypoint is an outlier, if is, keep using the last one
         if count>1:
             distances = np.linalg.norm(keypoints_left_np - last_left, axis=1)
-            if np.sum(distances) > 10:
+            if np.sum(distances) > left_distance_threshold:
                 keypoints_left_np = last_left
         last_left = keypoints_left_np
 
@@ -133,7 +138,7 @@ for rgb_file, depth_file in zip(rgb_files, depth_files):
         # Check if the corrected keypoint is an outlier, if is, keep using the last one
         if count > 1:
             distances = np.linalg.norm(keypoints_right_np - last_right, axis=1)
-            if np.sum(distances) > 4:
+            if np.sum(distances) > right_distance_threshold:
                 keypoints_right_np = last_right
         last_right = keypoints_right_np
 
@@ -207,7 +212,6 @@ for rgb_file, depth_file in zip(rgb_files, depth_files):
     vis.add_geometry(lines_left)
     vis.add_geometry(lines_right)
 
-    # 添加球体到可视化窗口
     for sphere in spheres_left:
         vis.add_geometry(sphere)
     for sphere in spheres_right:
@@ -219,8 +223,12 @@ for rgb_file, depth_file in zip(rgb_files, depth_files):
     image = vis.capture_screen_float_buffer(False)
     image_np = (np.asarray(image) * 255).astype(np.uint8)
     image_np = cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR)
+
+    if video_writer is None:
+        height, width, _ = image_np.shape
+        video_writer = cv2.VideoWriter(video_filename, fourcc, fps, (width, height))
+
     video_writer.write(image_np)
-    print("Captured image shape:", image_np.shape)
 
 video_writer.release()
 vis.destroy_window()

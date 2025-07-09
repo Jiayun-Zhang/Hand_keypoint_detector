@@ -6,7 +6,7 @@ import open3d as o3d
 import numpy as np
 from PIL import Image
 import argparse
-
+import cv2
 # python hand_to_gripper.py --rgb_folder "C:/Users/Jiayun/Desktop/data/empty-vase_take2/rgb" --depth_folder "C:/Users/Jiayun/Desktop/data/empty-vase_take2/depth" --json_file "corrected_empty-vase_keypoint_all_take2.json"
 
 parser = argparse.ArgumentParser(description="Gripper pose visualization with Open3D.")
@@ -22,6 +22,11 @@ json_file = args.json_file
 output_folder = args.output_folder
 
 os.makedirs(output_folder, exist_ok=True)
+
+video_filename = os.path.join('hand2gripper_video.mp4')  # 可改为 .mp4
+fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+fps = 30
+video_writer = None
 
 def apply_transformation_to_gripper(mesh, transformation):
     mesh_transformed = copy.deepcopy(mesh)
@@ -174,18 +179,26 @@ for index_to_view in range(len(rgb_files)):
         vis.add_geometry(lines_right)
         vis.add_geometry(coordinate_frame)
 
-
         vis.poll_events()
         vis.update_renderer()
-
-
         time.sleep(0.02)
         image_path = os.path.join("hand2gripper_output", f"frame_{index_to_view:04d}.png")
-        vis.capture_screen_image(image_path)
+        image = vis.capture_screen_float_buffer(False)
+        image_np = (np.asarray(image) * 255).astype(np.uint8)
+        image_np = cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR)
+        if video_writer is None:
+            height, width, _ = image_np.shape
+            video_writer = cv2.VideoWriter(video_filename, fourcc, fps, (width, height))
 
+        video_writer.write(image_np)
 
 with open(json_file, 'w') as json_file:
     json.dump(data, json_file)
 
 vis.destroy_window()
+
+# Generate Video visualization
+if video_writer is not None:
+    video_writer.release()
+    print(f"Video saved to: {video_filename}")
 
