@@ -48,11 +48,13 @@ Correct the position of key points using the depth map
 python correct_kp_bias.py --rgb_folder "C:/Users/Jiayun/Desktop/data/empty-vase_take2/rgb" --depth_folder "C:/Users/Jiayun/Desktop/data/empty-vase_take2/depth" --json_file "empty-vase_keypoint_all_take2.json"
 # modify the rgb_folder, depth_folder and json_file arguments
 ```
+![Hand Keypoints Visualization](demo_example/hand_keypoints.gif)
 Convert hand key points into gripper poses and generate visualization videos
 ```
 python hand_to_gripper.py --rgb_folder "C:/Users/Jiayun/Desktop/data/empty-vase_take2/rgb" --depth_folder "C:/Users/Jiayun/Desktop/data/empty-vase_take2/depth" --json_file "corrected_empty-vase_keypoint_all_take2.json" 
 # modify rgb_folder, depth_folder and json_file
 ```
+![Gripper Pose Visualization](demo_example/hand_to_gripper.gif)
 
 Manually modify the opening or closing of the gripper
 ```
