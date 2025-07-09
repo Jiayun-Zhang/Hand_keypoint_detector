@@ -5,10 +5,23 @@ import time
 import open3d as o3d
 import numpy as np
 from PIL import Image
+import argparse
 
-rgb_folder = 'C:/Users/Jiayun/Desktop/pouring/take8/rgb'
-depth_folder = 'C:/Users/Jiayun/Desktop/pouring/take8/depth'
-json_file = "corrected_aligned_keypoint_take8.json"
+# python hand_to_gripper.py --rgb_folder "C:/Users/Jiayun/Desktop/data/empty-vase_take2/rgb" --depth_folder "C:/Users/Jiayun/Desktop/data/empty-vase_take2/depth" --json_file "corrected_empty-vase_keypoint_all_take2.json"
+
+parser = argparse.ArgumentParser(description="Gripper pose visualization with Open3D.")
+parser.add_argument('--rgb_folder', type=str, required=True, help='Path to RGB image folder')
+parser.add_argument('--depth_folder', type=str, required=True, help='Path to depth image folder')
+parser.add_argument('--json_file', type=str, required=True, help='Path to corrected JSON file')
+parser.add_argument('--output_folder', type=str, default='hand2gripper_output', help='Folder to save output frames')
+args = parser.parse_args()
+
+rgb_folder = args.rgb_folder
+depth_folder = args.depth_folder
+json_file = args.json_file
+output_folder = args.output_folder
+
+os.makedirs(output_folder, exist_ok=True)
 
 def apply_transformation_to_gripper(mesh, transformation):
     mesh_transformed = copy.deepcopy(mesh)
@@ -170,9 +183,6 @@ for index_to_view in range(len(rgb_files)):
         image_path = os.path.join("hand2gripper_output", f"frame_{index_to_view:04d}.png")
         vis.capture_screen_image(image_path)
 
-    # except KeyError:
-    #     print(f"KeyError occurred for frame {index_to_view}, skipping this file.")
-    #     continue
 
 with open(json_file, 'w') as json_file:
     json.dump(data, json_file)

@@ -4,12 +4,33 @@ from PIL import Image
 import os
 import json
 import cv2
-from back_project import project_2d_to_3d
 import re
+import argparse
 
-rgb_folder = 'C:/Users/Jiayun/Desktop/pouring/take8/rgb'
-depth_folder = 'C:/Users/Jiayun/Desktop/pouring/take8/depth'
-json_file = "aligned_keypoint_take8.json"
+def project_2d_to_3d(u, v, depth_image, intrinsics):
+    fx = intrinsics[0, 0]
+    fy = intrinsics[1, 1]
+    cx = intrinsics[0, 2]
+    cy = intrinsics[1, 2]
+
+    Z = depth_image[min(479, round(v)), min(639, round(u))]
+    if Z == 0:
+        return np.array([0, 0, 0])
+    X = (u - cx) * Z / fx
+    Y = (v - cy) * Z / fy
+
+    return np.array([X, Y, Z])
+# python correct_kp_bias.py --rgb_folder "C:/Users/Jiayun/Desktop/data/empty-vase_take2/rgb" --depth_folder "C:/Users/Jiayun/Desktop/data/empty-vase_take2/depth" --json_file "empty-vase_keypoint_all_take2.json"
+parser = argparse.ArgumentParser(description='3D keypoint correction and visualization')
+parser.add_argument('--rgb_folder', type=str, required=True, help='Path to RGB image folder')
+parser.add_argument('--depth_folder', type=str, required=True, help='Path to depth .npy files folder')
+parser.add_argument('--json_file', type=str, required=True, help='Path to the keypoint JSON file')
+args = parser.parse_args()
+
+rgb_folder = args.rgb_folder
+depth_folder = args.depth_folder
+json_file = args.json_file
+
 
 with open(json_file, 'r') as json_file1:
     data = json.load(json_file1)
@@ -24,6 +45,7 @@ vis.create_window()
 
 cam_intr = o3d.camera.PinholeCameraIntrinsic(
     width=640, height=480, fx=570.3422241210938, fy=570.3422241210938, cx=319.5, cy=239.5)
+
 K = np.array([[570.3422241210938, 0, 319.5],
                 [0, 570.3422241210938, 239.5],
                 [0, 0, 1]])
@@ -31,7 +53,7 @@ K = np.array([[570.3422241210938, 0, 319.5],
 video_filename = 'output_video.mp4'
 fps = 30
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-video_writer = cv2.VideoWriter(video_filename, fourcc, fps, (640, 480))
+video_writer = cv2.VideoWriter(video_filename, fourcc, fps, (1920, 1080))
 
 count = 0
 last_left = []
@@ -111,7 +133,7 @@ for rgb_file, depth_file in zip(rgb_files, depth_files):
         # Check if the corrected keypoint is an outlier, if is, keep using the last one
         if count > 1:
             distances = np.linalg.norm(keypoints_right_np - last_right, axis=1)
-            if np.sum(distances) > 10:
+            if np.sum(distances) > 4:
                 keypoints_right_np = last_right
         last_right = keypoints_right_np
 
@@ -149,6 +171,22 @@ for rgb_file, depth_file in zip(rgb_files, depth_files):
         colors_right = [[0, 0, 1] for _ in range(len(connections))]
         lines_right.colors = o3d.utility.Vector3dVector(colors_right)
 
+        sphere_radius = 0.005
+        spheres_left = []
+        for kp in keypoints_left_np:
+            sphere = o3d.geometry.TriangleMesh.create_sphere(radius=sphere_radius)
+            sphere.translate(kp)
+            sphere.paint_uniform_color([1, 0, 0])  # 红色
+            spheres_left.append(sphere)
+
+        spheres_right = []
+        for kp in keypoints_right_np:
+            sphere = o3d.geometry.TriangleMesh.create_sphere(radius=sphere_radius)
+            sphere.translate(kp)
+            sphere.paint_uniform_color([0, 0, 1])
+            spheres_right.append(sphere)
+
+
     except KeyError:
         continue
 
@@ -169,20 +207,22 @@ for rgb_file, depth_file in zip(rgb_files, depth_files):
     vis.add_geometry(lines_left)
     vis.add_geometry(lines_right)
 
+    # 添加球体到可视化窗口
+    for sphere in spheres_left:
+        vis.add_geometry(sphere)
+    for sphere in spheres_right:
+        vis.add_geometry(sphere)
+
     vis.poll_events()
     vis.update_renderer()
 
     image = vis.capture_screen_float_buffer(False)
-    image_np = np.asarray(image) * 255
-    image_np = image_np.astype(np.uint8)
-
+    image_np = (np.asarray(image) * 255).astype(np.uint8)
     image_np = cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR)
-
-
     video_writer.write(image_np)
+    print("Captured image shape:", image_np.shape)
 
 video_writer.release()
-
 vis.destroy_window()
 
 
@@ -190,29 +230,26 @@ vis.destroy_window()
 image_files = [f for f in os.listdir(rgb_folder) if f.startswith("rgb_frame") and f.endswith(".png")]
 image_files_sorted = sorted(image_files, key=lambda x: int(re.search(r"rgb_frame(\d+)\.png", x).group(1)))
 
-# 3. 遍历所有图片，检查 JSON 是否缺失 key
-last_valid_data = None  # 存储前一张有效帧的数据
+
+last_valid_data = None
 
 for frame in image_files_sorted:
-    if frame in data:  # 如果 JSON 中有这个 key
+    if frame in data:  # If key in json
         if "corrected_3d_keypoints" not in data[frame]["left"]:
             data[frame]["left"] = last_valid_data["left"]
             # print(frame)
         if "corrected_3d_keypoints" not in data[frame]["right"]:
             data[frame]["right"] = last_valid_data["right"]
             print(frame)
-        last_valid_data = data[frame]  # 更新 last_valid_data
-    else:  # 如果 JSON 缺失这个 key
-        if last_valid_data is not None:  # 如果前一张有效帧存在
-            data[frame] = last_valid_data.copy()  # 复制前一张的数据
+        last_valid_data = data[frame]
+    else:
+        if last_valid_data is not None:
+            data[frame] = last_valid_data.copy()
             print(f"Added missing frame {frame} using previous data.")
             # (data[frame])
         else:
             print(f"Warning: {frame} is missing and no previous data available!")
 
-# 4. 保存修改后的 JSON
 output_file = json_file
-
-
 with open("corrected_" + json_file, 'w') as json_file:
     json.dump(data, json_file)

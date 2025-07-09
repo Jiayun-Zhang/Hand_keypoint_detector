@@ -131,8 +131,8 @@ def main():
             keyp = left_hand_keyp
             valid = keyp[:, 2] > 0.4
             if sum(valid) > 3:
-                total_confidence = np.sum(keyp[valid, 2])  # 计算左手关键点的置信度总和
-                if total_confidence > best_left_confidence:  # 更新最高置信度的左手
+                total_confidence = np.sum(keyp[valid, 2])  # Calculate the sum of confidence
+                if total_confidence > best_left_confidence:  # update the left hand with the highest sum
                     best_left_confidence = total_confidence
                     best_left_hand_bbox = [keyp[valid, 0].min()-10, keyp[valid, 1].min()-10,
                                            keyp[valid, 0].max()+10, keyp[valid, 1].max()+10]
