@@ -48,7 +48,7 @@ bash fetch_demo_data.sh
 ## Demo
 Next, we need to prepare a video of a dual-arm manipulation task from a first-person perspective, and then convert it into picture frames and put it in a folder.
 
-After that, modify augments img_folder and out_file, and run the following command to use HaMeR to extract hand keypoints:
+After that, modify augments `img_folder` and `out_file`, and run the following command to use HaMeR to extract hand keypoints:
 ```
 python run.py --img_folder C:/Users/Jiayun/Desktop/hamer/demos_new/take1/rgb --out_file keypoint_all_take1.json --batch_size=48 --full_frame
 
@@ -80,7 +80,7 @@ python hand_to_gripper.py --rgb_folder "C:/Users/Jiayun/Desktop/data/empty-vase_
 
 ### Manually Annotating Gripper Open/Close States
 
-To set the gripper states (open = 1, close = 0) in the keypoint annotation JSON file, use the provided script.
+To set the gripper states (open = 1, close = 0) in the keypoint annotation JSON file, use the provided `gripper.py` script.
 You can customize the frame ranges by editing the `left_open_close_ranges` and `right_open_close_ranges` lists in the script:
 
 ```python
@@ -90,13 +90,13 @@ left_open_close_ranges = [
 right_open_close_ranges = [
     [115, 203],  # close right gripper between these frames
 ]
-
-Finally, run it:
+```
+Finally, run `gripper.py`:
 ```
 python gripper.py 
 ```
 
-Finally, we got a file corrected_empty-vase_keypoint_all_take2.json and it contains the gripper pose for both hand.
+Finally, we got a file `corrected_empty-vase_keypoint_all_take2.json` and it contains the gripper pose for both hand.
 
 # Acknowledgements
 Parts of the code are taken or adapted from the following repos:
