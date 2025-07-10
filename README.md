@@ -1,7 +1,16 @@
 # Hand Keypoint detector
 
-Create a virtual environment python 3.10:
+This repository contains the core implementation of my Master's thesis project:  
+**"Low-Cost Imitation Learning for Dual-Arm Robots: Leveraging a Single Human Demonstration"**.
+It focuses on predicting dual-arm robot trajectories directly from RGB human demonstration videos.
 
+# Installation
+First you need to clone the repo:
+```
+git clone https://github.com/Jiayun-Zhang/Hand_keypoint_detector.git
+```
+
+Then, create a virtual environment python 3.10:
 
 ```
 py -3.10 -m venv venv
@@ -37,17 +46,19 @@ bash fetch_demo_data.sh
 
 ```
 
-Run the code:
+Next, we need to prepare a video of a dual-arm manipulation task from a first-person perspective, and then convert it into picture frames and put it in a folder.
 
+After that, modify augments img_folder and out_file, and run the following command to use HaMeR to extract hand keypoints:
 ```
 python run.py --img_folder C:/Users/Jiayun/Desktop/hamer/demos_new/take1/rgb --out_file keypoint_all_take1.json --batch_size=48 --full_frame
 
 ```
-Correct the position of key points using the depth map
+
+Then, modify the rgb_folder, depth_folder and json_file arguments and correct the position of key points using the depth map
 ```
 python correct_kp_bias.py --rgb_folder "C:/Users/Jiayun/Desktop/data/empty-vase_take2/rgb" --depth_folder "C:/Users/Jiayun/Desktop/data/empty-vase_take2/depth" --json_file "empty-vase_keypoint_all_take2.json"
-# modify the rgb_folder, depth_folder and json_file arguments
 ```
+
 <h2 align="center">Hand Keypoints Visualization</h2>
 <p align="center">
   <img src="demo_example/hand_keypoints.gif" width="640" alt="Hand Keypoints Visualization" />
@@ -55,9 +66,9 @@ python correct_kp_bias.py --rgb_folder "C:/Users/Jiayun/Desktop/data/empty-vase_
 
 <p align="center">Convert hand key points into gripper poses and generate visualization videos</p>
 
+Then, modify rgb_folder, depth_folder and json_file, run the following command to convert the hand keypoints to Gripper pose.
 ```bash
 python hand_to_gripper.py --rgb_folder "C:/Users/Jiayun/Desktop/data/empty-vase_take2/rgb" --depth_folder "C:/Users/Jiayun/Desktop/data/empty-vase_take2/depth" --json_file "corrected_empty-vase_keypoint_all_take2.json" 
-# modify rgb_folder, depth_folder and json_file
 ```
 
 <h2 align="center">Gripper Pose Visualization</h2>
@@ -68,7 +79,7 @@ python hand_to_gripper.py --rgb_folder "C:/Users/Jiayun/Desktop/data/empty-vase_
 <p align="center">Convert hand key points into gripper poses and generate visualization videos</p>
 
 
-Manually modify the opening or closing of the gripper
+Finally, we should manually modify the opening or closing of the gripper
 ```
 python gripper.py 
 ```
