@@ -45,7 +45,7 @@ Download the trained model
 bash fetch_demo_data.sh
 
 ```
-
+# Demo
 Next, we need to prepare a video of a dual-arm manipulation task from a first-person perspective, and then convert it into picture frames and put it in a folder.
 
 After that, modify augments img_folder and out_file, and run the following command to use HaMeR to extract hand keypoints:
@@ -83,3 +83,8 @@ Finally, we should manually modify the opening or closing of the gripper
 ```
 python gripper.py 
 ```
+Finally, we got a file corrected_empty-vase_keypoint_all_take2.json and it contains the gripper pose for both hand.
+
+# Acknowledgements
+Parts of the code are taken or adapted from the following repos:
+[HaMeR](https://github.com/geopavlakos/hamer)
