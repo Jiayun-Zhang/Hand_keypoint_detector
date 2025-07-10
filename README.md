@@ -54,7 +54,7 @@ python run.py --img_folder C:/Users/Jiayun/Desktop/hamer/demos_new/take1/rgb --o
 
 ```
 
-Then, modify the rgb_folder, depth_folder and json_file arguments and correct the position of key points using the depth map
+Then, modify the `rgb_folder`, `depth_folder` and `json_file` arguments and correct the position of key points using the depth map
 ```
 python correct_kp_bias.py --rgb_folder "C:/Users/Jiayun/Desktop/data/empty-vase_take2/rgb" --depth_folder "C:/Users/Jiayun/Desktop/data/empty-vase_take2/depth" --json_file "empty-vase_keypoint_all_take2.json"
 ```
@@ -66,7 +66,7 @@ python correct_kp_bias.py --rgb_folder "C:/Users/Jiayun/Desktop/data/empty-vase_
 
 <p align="center">Convert hand key points into gripper poses and generate visualization videos</p>
 
-Then, modify rgb_folder, depth_folder and json_file, run the following command to convert the hand keypoints to Gripper pose.
+Then, modify `rgb_folder`, `depth_folder` and `json_file`, run the following command to convert the hand keypoints to Gripper pose.
 ```bash
 python hand_to_gripper.py --rgb_folder "C:/Users/Jiayun/Desktop/data/empty-vase_take2/rgb" --depth_folder "C:/Users/Jiayun/Desktop/data/empty-vase_take2/depth" --json_file "corrected_empty-vase_keypoint_all_take2.json" 
 ```
