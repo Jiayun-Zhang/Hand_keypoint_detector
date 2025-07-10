@@ -1,4 +1,4 @@
-### Hand Keypoint detector
+# Hand Keypoint detector
 
 This repository contains the core implementation of my Master's thesis project:  
 **"Low-Cost Imitation Learning for Dual-Arm Robots: Leveraging a Single Human Demonstration"**.
@@ -78,7 +78,7 @@ python hand_to_gripper.py --rgb_folder "C:/Users/Jiayun/Desktop/data/empty-vase_
 
 <p align="center">Convert hand key points into gripper poses and generate visualization videos</p>
 
-# Manually Annotating Gripper Open/Close States
+### Manually Annotating Gripper Open/Close States
 
 To set the gripper states (open = 1, close = 0) in the keypoint annotation JSON file, use the provided script.
 You can customize the frame ranges by editing the `left_open_close_ranges` and `right_open_close_ranges` lists in the script:
