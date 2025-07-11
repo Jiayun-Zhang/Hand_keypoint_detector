@@ -102,4 +102,5 @@ Finally, we got a file `corrected_empty-vase_keypoint_all_take2.json` and it con
 Parts of the code are taken or adapted from the following repos:
 
 [HaMeR](https://github.com/geopavlakos/hamer)
+
 [VitPose](https://github.com/ViTAE-Transformer/ViTPose)
