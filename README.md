@@ -3,7 +3,9 @@
 This repository contains the core implementation of my Master's thesis project:  
 **"Low-Cost Imitation Learning for Dual-Arm Robots: Leveraging a Single Human Demonstration"**.
 It focuses on predicting dual-arm robot trajectories directly from RGB human demonstration videos.
-![](demo_example/hand_image.png)
+<p align="center">
+  <img src="demo_example/hand_image.png" width="640" alt="" />
+</p>
 
 ## Installation
 First you need to clone the repo:
