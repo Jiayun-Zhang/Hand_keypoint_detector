@@ -1,7 +1,7 @@
 # Hand Keypoint detector
 
-This is the repository of my AI Master's thesis work titled **"Low-Cost Imitation Learning for Dual-Arm Robots: Leveraging a Single Human Demonstration"** carried out at the University of Groningen under the supervision of Prof. Dr. Hamidreza Kasaei and Georgios Tziafas. (Link to the 
-[IRL-Lab](https://www.ai.rug.nl/irl-lab/index.html)）
+This is the repository of my AI Master's thesis work titled **"Low-Cost Imitation Learning for Dual-Arm Robots: Leveraging a Single Human Demonstration"** carried out at the University of Groningen under the supervision of Prof. Dr. Hamidreza Kasaei and Georgios Tziafas([IRL-Lab](https://www.ai.rug.nl/irl-lab/index.html)）.
+
 This project focuses on predicting dual-arm robot trajectories directly from RGB human demonstration videos.
 
 <p align="center">
